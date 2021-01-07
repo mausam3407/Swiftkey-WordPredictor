@@ -1,0 +1,108 @@
+---
+title: "Exploratory Data Analysis"
+author: "Mausam"
+date: "02/01/2021"
+output:
+  ioslides_presentation:
+    widescreen: yes
+    smaller: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+## Synopsis
+ 
+This report aims to analyze the text data obtained from Twitter, Blogs and news articles.  
+
+To learn more about data, You can download it from [here](https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip).
+
+
+## Bullet Points    
+
+- All the analysis is done with R programming language.
+- Facebook list of banned words is used for the removal of obscene words 
+- For the display purpose only 1% sample of data is used
+- For more info and codes [click here](https://github.com/mausam3407/Swiftkey-WordPredictor)
+- Only top 30 ngrams are selected for Barplot
+```{r loading the data and required packages,cache=TRUE,warning=FALSE}
+library(ngram)
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(NLP))
+library(RColorBrewer)
+library(wordcloud2)
+library(tm)
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(ggthemes))
+setwd("~/final/en_US")
+blogs<-readLines("en_US.blogs.txt")
+news<-readLines("en_US.news.txt")
+tweets<-readLines("en_US.twitter.txt")
+b_words<-readLines("facebook-bad-words-list_comma-separated-text-file_2018_07_29.txt")
+t_all<-c(blogs,news,tweets)
+remove(blogs)
+remove(news)
+remove(tweets)
+len<-length(t_all)
+t_all<-sample(t_all,0.01*len)
+```
+```{r cleaning the data,cache=TRUE,warning=FALSE}
+t_all<-as.String(t_all)
+t_all<-as.character(t_all)
+t_all<-tolower(t_all)
+t_all<-str_replace_all(t_all,"[^\'[a-z]]"," ")
+b_words<-tolower(b_words)
+t_all<-removeWords(t_all,b_words)
+remove(b_words)
+wr<-words(t_all)
+wr<-removeWords(wr,stopwords(kind="en"))
+```
+
+## Word Cloud
+
+I've chosen top 1000 words only frequency wise for display purpose. All
+the stopwords have been avoided. This wordcloud shows the distribution of words
+in the given datastet.
+
+```{r wordcloud,cache=TRUE,warning=FALSE,fig.align="centre"}
+freq<-termFreq(wr)
+freq<-data.frame(word=names(freq),freq=freq)
+freq<-freq[order(freq$freq,decreasing = TRUE),]
+fre<-head(freq,1000)
+wordcloud2(fre,backgroundColor = "black",color = "random-light",shape="star")
+remove(wr)
+remove(fre)
+remove(freq)
+```
+
+## Exploring Bigrams
+
+```{r exploring 2grams,cache=TRUE,warning=FALSE,out.height="95%",out.width="98%"}
+ng2<-ngram(t_all,2)
+df2<-get.phrasetable(ng2)
+df2_<-head(df2,30)
+fig1<-ggplot(df2_,aes(y=freq,x=ngrams,fill=freq))+geom_col()+coord_flip()+ggtitle("Distribution of Bigrams")+xlab("Bigrams")+ylab("Frequency")
+fig1
+```
+
+## Exploring Trigrams
+
+```{r exploring 3grams,cache=TRUE,warning=FALSE,out.height="95%",out.width="98%"}
+ng3<-ngram(t_all,3)
+df3<-get.phrasetable(ng3)
+df3_<-head(df3,30)
+fig2<-ggplot(df3_,aes(y=freq,x=ngrams,fill=freq))+geom_col()+coord_flip()+ggtitle("Distribution of Trigrams")+xlab("Trigrams")+ylab("Frequency")
+fig2
+```
+
+## Exploring Quadgrams
+
+```{r exploring 4-grams, cache=TRUE,warning=FALSE,out.height="95%",out.width="98%"}
+ng4<-ngram(t_all,4)
+df4<-get.phrasetable(ng4)
+df4_<-head(df4,30)
+fig3<-ggplot(df4_,aes(y=freq,x=ngrams,fill=freq))+geom_col()+coord_flip()+ggtitle("Distribution of Quadgrams")+xlab("Quadgrams")+ylab("Frequency")
+fig3
+```
+
+
